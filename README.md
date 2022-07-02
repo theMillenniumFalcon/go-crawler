@@ -1,1 +1,1 @@
-## A MUD (multi-user dungeon) written in golang
+## A simple MUD (multi-user dungeon) written in golang
