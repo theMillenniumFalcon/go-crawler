@@ -6,6 +6,19 @@ import (
 	"net"
 )
 
+type User struct {
+	name    string
+	session *Session
+}
+
+type Session struct {
+	conn *net.Conn
+}
+
+type World struct {
+	users []*User
+}
+
 func handleConnection(conn net.Conn) error {
 	log.Println("I got a connection")
 	buf := make([]byte, 4096)
