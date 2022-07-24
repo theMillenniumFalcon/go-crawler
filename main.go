@@ -6,6 +6,10 @@ import (
 	"net"
 )
 
+type UserJoinedEvent struct {
+	user *User
+}
+
 type User struct {
 	name    string
 	session *Session
@@ -32,7 +36,7 @@ func handleConnection(conn net.Conn) error {
 			break
 		}
 		msg := buf[0 : n-2]
-		log.Println("Receivedd message: ", []byte(msg))
+		log.Println("Recieved message: ", []byte(msg))
 
 		resp := fmt.Sprintf("You said, \"%s\"\r\n", msg)
 		n, err = conn.Write([]byte(resp))
@@ -67,8 +71,14 @@ func startServer() error {
 }
 
 func main() {
-	err := startServer()
-	if err != nil {
-		log.Fatal(err)
-	}
+	w := &World{}
+
+	ch := make(chan interface{})
+
+	go func() {
+		err := startServer(ch)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 }
