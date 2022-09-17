@@ -1,1 +1,1 @@
-## A simple MUD (multi-user dungeon) written in golang
+A site map crawler to help in search engine optimization 

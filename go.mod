@@ -1,3 +1,3 @@
-module github.com/theMillenniumFalcon/gomud
+module github.com/theMillenniumFalcon/crawler
 
 go 1.18
