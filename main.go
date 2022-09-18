@@ -3,11 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 )
 
-type SeoData struct {
+type SEOData struct {
 	URL             string
 	Title           string
 	H1              string
@@ -30,7 +31,29 @@ var userAgents = []string{
 	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Safari/604.1.38",
 }
 
-func ExtractSiteMapURLsFunc(startURL string) []string {
+func randomUserAgent() string {
+	rand.Seed(time.Now().Unix())
+	randNum := rand.Int() % len(userAgents)
+	return userAgents[randNum]
+}
+
+func isSitemap(urls []string) ([]string, []string) {
+	siteMapFiles := []string{}
+	pages := []string{}
+
+	for _, page := range urls {
+		if foundSitemap == true {
+			fmt.Println("Found sitemap", page)
+			siteMapFiles = append(siteMapFiles, page)
+		} else {
+			pages = append(pages, page)
+		}
+	}
+
+	return siteMapFiles, pages
+}
+
+func extractSiteMapURLsFunc(startURL string) []string {
 	workList := make(chan []string)
 	toCrawl := []string{}
 	var n int
@@ -79,15 +102,33 @@ func makeRequest(url string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return res, nil
 }
 
-func scrapeURLs(urls []string, parser Parser, concurrency int) []SeoData {
+func scrapeURLs(urls []string, parser Parser, concurrency int) []SEOData {
 
 }
 
-func ScrapeSiteMapfunc(url string, parser Parser, concurrency int) []SeoData {
-	results := ExtractSiteMapURLsFunc(url)
+func scrapePage(url string, parser Parser) (SEOData, error) {
+	res, err := crawlPage(url)
+	if err != nil {
+		return SEOData{}, err
+	}
+	data, err := parser.getSEOData(res)
+	if err != nil {
+		return SEOData{}, err
+	}
+
+	return data, nil
+}
+
+func crawlPage(url string) {
+
+}
+
+func ScrapeSiteMapfunc(url string, parser Parser, concurrency int) []SEOData {
+	results := extractSiteMapURLsFunc(url)
 	res := scrapeURLs(results, parser, concurrency)
 	return res
 }
