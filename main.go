@@ -5,7 +5,10 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 type SEOData struct {
@@ -20,6 +23,7 @@ type DefaultParser struct {
 }
 
 type Parser interface {
+	getSEOData(resp *http.Response) (SEOData, error)
 }
 
 var userAgents = []string{
@@ -42,6 +46,7 @@ func isSitemap(urls []string) ([]string, []string) {
 	pages := []string{}
 
 	for _, page := range urls {
+		foundSitemap := strings.Contains(page, "xml")
 		if foundSitemap == true {
 			fmt.Println("Found sitemap", page)
 			siteMapFiles = append(siteMapFiles, page)
@@ -110,6 +115,23 @@ func scrapeURLs(urls []string, parser Parser, concurrency int) []SEOData {
 
 }
 
+func extractURLs(response *http.Response) ([]string, error) {
+	doc, err := goquery.NewDocumentFromResponse(response)
+	if err != nil {
+		return nil, err
+	}
+	results := []string{}
+	sel := doc.Find("loc")
+
+	for i := range sel.Nodes {
+		loc := sel.Eq(i)
+		result := loc.Text()
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 func scrapePage(url string, parser Parser) (SEOData, error) {
 	res, err := crawlPage(url)
 	if err != nil {
@@ -125,6 +147,21 @@ func scrapePage(url string, parser Parser) (SEOData, error) {
 
 func crawlPage(url string) {
 
+}
+
+func (d DefaultParser) getSEOData(resp *http.Response) (SEOData, error) {
+	doc, err := goquery.NewDocumentFromResponse(resp)
+	if err != nil {
+		return SEOData{}, err
+	}
+	result := SEOData{}
+	result.URL = resp.Request.URL.String()
+	result.StatusCode = resp.StatusCode
+	result.Title = doc.Find("title").First().Text()
+	result.H1 = doc.Find("h1").First().Text()
+	result.MetaDescription, _ = doc.Find("meta[name^=description]").Attr("content")
+
+	return result, nil
 }
 
 func ScrapeSiteMapfunc(url string, parser Parser, concurrency int) []SEOData {
