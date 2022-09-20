@@ -112,7 +112,33 @@ func makeRequest(url string) (*http.Response, error) {
 }
 
 func scrapeURLs(urls []string, parser Parser, concurrency int) []SEOData {
+	tokens := make(chan struct{}, concurrency)
+	var n int
+	workList := make(chan []string)
+	results := []SEOData{}
 
+	go func() {
+		workList <- urls
+	}()
+
+	for ; n > 0; n-- {
+		list := <-workList
+		for _, url := range list {
+			if url != "" {
+				n++
+				go func(url string, token chan struct{}) {
+					log.Printf("Requesting URL:%s", url)
+					res, err := scrapePage(url, tokens, parser)
+					if err != nil {
+						log.Println("Encounered error, URL:%s", url)
+					} else {
+						results = append(results, res)
+					}
+					workList <- []string{}
+				}(url, tokens)
+			}
+		}
+	}
 }
 
 func extractURLs(response *http.Response) ([]string, error) {
@@ -132,8 +158,8 @@ func extractURLs(response *http.Response) ([]string, error) {
 	return results, nil
 }
 
-func scrapePage(url string, parser Parser) (SEOData, error) {
-	res, err := crawlPage(url)
+func scrapePage(url string, token chan struct{}, parser Parser) (SEOData, error) {
+	res, err := crawlPage(url, token)
 	if err != nil {
 		return SEOData{}, err
 	}
@@ -141,7 +167,6 @@ func scrapePage(url string, parser Parser) (SEOData, error) {
 	if err != nil {
 		return SEOData{}, err
 	}
-
 	return data, nil
 }
 
