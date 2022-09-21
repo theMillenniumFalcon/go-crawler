@@ -130,7 +130,7 @@ func scrapeURLs(urls []string, parser Parser, concurrency int) []SEOData {
 					log.Printf("Requesting URL:%s", url)
 					res, err := scrapePage(url, tokens, parser)
 					if err != nil {
-						log.Println("Encounered error, URL:%s", url)
+						log.Printf("Encounered error, URL:%s", url)
 					} else {
 						results = append(results, res)
 					}
@@ -139,6 +139,8 @@ func scrapeURLs(urls []string, parser Parser, concurrency int) []SEOData {
 			}
 		}
 	}
+
+	return results
 }
 
 func extractURLs(response *http.Response) ([]string, error) {
@@ -170,8 +172,14 @@ func scrapePage(url string, token chan struct{}, parser Parser) (SEOData, error)
 	return data, nil
 }
 
-func crawlPage(url string) {
-
+func crawlPage(url string, tokens chan struct{}) (*http.Response, error) {
+	tokens <- struct{}{}
+	resp, err := makeRequest(url)
+	<-tokens
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
 }
 
 func (d DefaultParser) getSEOData(resp *http.Response) (SEOData, error) {
